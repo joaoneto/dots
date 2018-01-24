@@ -10,18 +10,18 @@ const target = {
 };
 
 const distance = (x1, x2, y1, y2) => {
-  let a = x1 - x2
-  let b = y1 - y2
+  let a = x1 - x2;
+  let b = y1 - y2;
   return Math.sqrt(a*a + b*b);
 };
-
 
 class Dot {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.speed = 0.25;
+    this.speed = Math.random();
     this.color = '#fff';
+    this.distance = 1;
   }
 
   die() {
@@ -32,9 +32,15 @@ class Dot {
   }
 
   update() {
-    this.x += 1 * (Math.floor(Math.random() * 2) ? -this.speed : this.speed);
+    if (Math.floor(Math.random() * 2)) {
+      this.x -= Math.random() * this.speed;
+    } else {
+      this.x += Math.random() * this.speed;
+    }
+
+    this.distance = distance(this.x, target.x, this.y, target.y);
+
     this.y -= this.speed;
-    this.distance = distance(this.x - target.x, this.y - target.y);
   }
 
   draw() {
@@ -43,28 +49,31 @@ class Dot {
   }
 }
 
-
 let dotsFarm = [];
-
 for (let x = 0; x < 10; x++) {
-  dotsFarm.push(new Dot(width/2, height));
+  dotsFarm.push(new Dot(width / 2, height - 10));
 }
 
 const update = () => {
-  for (let x = 0; x < 10; x++) {
-    let dot = dotsFarm[x];
+  dotsFarm.forEach((dot, i) => {
     dot.update();
-
     if (dot.die()) {
-      console.log(dot)
+      dotsFarm.splice(i, 1);
     }
-  }
+  });
 };
 
 const draw = () => {
   context.clearRect(0, 0, width, height);
   context.fillStyle = '#333';
   context.fillRect(0, 0, width, height);
+
+  context.fillStyle = '#f00';
+  context.fillRect(target.x, target.y, 20, 20);
+
+  dotsFarm.forEach((dot) => {
+    dot.draw();
+  });
 };
 
 function main() {
