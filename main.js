@@ -19,28 +19,80 @@ class Dot {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.speed = Math.random();
+
+    this.velocityX = Math.random();
+    this.velocityY = Math.random();
+
     this.color = '#fff';
-    this.distance = 1;
+    this.distance = distance(this.x, target.x, this.y, target.y);
+    this.direction = Math.floor(Math.random() * 4);
+
+    this.steps = [];
+
+    this.bornAt = Date.now();
+
+    this.timer = setInterval(() => {
+      this.tick();
+    }, 1000);
+
+    this.stepForward();
+    this.tick();
+  }
+
+  destroy() {
+    clearInterval(this.timer);
   }
 
   die() {
-    if ((this.x < 0 || this.x > width) || (this.y < 0 || this.y > height)) {
+    if ((this.x < 0 || this.x > width) || (this.y < 0 || this.y > height) || this.steps.length > 19) {
+      this.diedAt = Date.now();
+      this.lifeTime = this.diedAt - this.bornAt;
+      this.destroy();
       return true;
     }
     return false;
   }
 
-  update() {
-    if (Math.floor(Math.random() * 2)) {
-      this.x -= Math.random() * this.speed;
-    } else {
-      this.x += Math.random() * this.speed;
+  tick() {
+    this.accelerationX = Math.random() * (Math.floor(Math.random() * 2) ? -1 : 1);
+    this.accelerationY = Math.random() * (Math.floor(Math.random() * 2) ? -1 : 1);
+
+    this.direction = Math.floor(Math.random() * 4);
+
+    switch (this.direction) {
+      case 0: // to top
+        this.y -= this.velocityY;
+        break;
+      case 1: // to right
+        this.x += this.velocityX;
+        break;
+      case 2: // to bottom
+        this.y += this.velocityY;
+        break;
+      case 3: // to left
+        this.x -= this.velocityX;
+        break;
     }
 
-    this.distance = distance(this.x, target.x, this.y, target.y);
+    this.stepForward();
+  }
 
-    this.y -= this.speed;
+  stepForward() {
+    this.steps.push({
+      x: this.x,
+      y: this.y,
+      velocityX: this.velocityX,
+      velocityY: this.velocityY,
+      accelerationX: this.accelerationX,
+      accelerationY: this.accelerationY,
+      direction: this.direction
+    })
+  }
+
+  update() {
+    this.x += this.accelerationX;
+    this.y += this.accelerationY;
+    this.distance = distance(this.x, target.x, this.y, target.y);
   }
 
   draw() {
@@ -51,7 +103,7 @@ class Dot {
 
 let dotsFarm = [];
 for (let x = 0; x < 10; x++) {
-  dotsFarm.push(new Dot(width / 2, height - 10));
+  dotsFarm.push(new Dot(width / 2, height - 20));
 }
 
 const update = () => {
@@ -69,7 +121,7 @@ const draw = () => {
   context.fillRect(0, 0, width, height);
 
   context.fillStyle = '#f00';
-  context.fillRect(target.x, target.y, 20, 20);
+  context.fillRect(target.x - 10, target.y - 5, 20, 20);
 
   dotsFarm.forEach((dot) => {
     dot.draw();
