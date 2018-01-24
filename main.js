@@ -6,7 +6,9 @@ const height = context.canvas.height;
 
 const target = {
   x: width / 2,
-  y: 10
+  y: 10,
+  colors: ['#f00', '#0f0'],
+  reached: 0
 };
 
 const distance = (x1, x2, y1, y2) => {
@@ -27,12 +29,14 @@ class Dot {
     this.velocityX = data.velocityX || Math.random();
     this.velocityY = data.velocityY || Math.random();
 
-    this.color = '#fff';
+    this.color = data.steps ? '#0ff' : '#fff';
     this.distance = distance(this.x, target.x, this.y, target.y);
     this.direction = data.direction || Math.floor(Math.random() * 4);
 
     this.steps = [];
     this.genes = data.steps || [];
+
+    this.hits = 0;
 
     this.bornAt = Date.now();
 
@@ -40,7 +44,6 @@ class Dot {
       this.tick();
     }, 1000);
 
-    this.stepForward();
     this.tick();
   }
 
@@ -50,9 +53,6 @@ class Dot {
 
   die() {
     if ((this.x < 0 || this.x > width) || (this.y < 0 || this.y > height) || this.steps.length > 20) {
-      this.diedAt = Date.now();
-      this.lifeTime = this.diedAt - this.bornAt;
-      this.destroy();
       return true;
     }
     return false;
@@ -86,17 +86,35 @@ class Dot {
 
   stepForward() {
     this.steps.push({
-      accelerationX: this.accelerationX,
-      accelerationY: this.accelerationY,
+      accelerationX: this.accelerationX + (Math.random() * (Math.floor(Math.random() * 2) ? -1 : 1) / this.generation),
+      accelerationY: this.accelerationY + (Math.random() * (Math.floor(Math.random() * 2) ? -1 : 1) / this.generation),
       direction: this.direction
     });
+  }
+
+  hitTarget() {
+    if ((this.x > target.x - 10 && this.x < target.x + 10) && (this.y > target.y - 10 && this.y < target.y + 10)) {
+      return true;
+    }
+    return false;
   }
 
   update() {
     this.x += this.accelerationX;
     this.y += this.accelerationY;
     this.distance = distance(this.x, target.x, this.y, target.y);
-    // this.y -= 0.25;
+
+    if (this.hitTarget()) {
+      this.hits += 1;
+    }
+
+    if (this.die()) {
+      this.diedAt = Date.now();
+      this.lifeTime = this.diedAt - this.bornAt;
+      this.destroy();
+    }
+
+    this.y -= 0.9;
   }
 
   draw() {
@@ -122,12 +140,17 @@ const update = () => {
     dotsGenes.length = 0;
   }
 
+  target.reached = 0;
+
   dotsFarm.forEach((dot, i) => {
     dot.update();
+    if (dot.hitTarget()) {
+      target.reached = 1;
+    }
     if (dot.die()) {
       let diedDot = dotsFarm.splice(i, 1)[0];
 
-      if (Math.floor(diedDot.distance) < height / 2 || diedDot.steps.length < 10) {
+      if (Math.floor(diedDot.distance) < 25 || diedDot.hits > 20 + generationIndex) {
         dotsGenes.push(diedDot);
       }
     }
@@ -139,7 +162,7 @@ const draw = () => {
   context.fillStyle = '#333';
   context.fillRect(0, 0, width, height);
 
-  context.fillStyle = '#f00';
+  context.fillStyle = target.colors[target.reached];
   context.fillRect(target.x - 10, target.y - 5, 20, 20);
 
   dotsFarm.forEach((dot) => {
