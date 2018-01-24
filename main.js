@@ -15,19 +15,24 @@ const distance = (x1, x2, y1, y2) => {
   return Math.sqrt(a*a + b*b);
 };
 
-class Dot {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
+let generationIndex = 0;
 
-    this.velocityX = Math.random();
-    this.velocityY = Math.random();
+class Dot {
+  constructor(data = {}) {
+    this.x = width / 2;
+    this.y = height - 20;
+
+    this.generation = generationIndex;
+
+    this.velocityX = data.velocityX || Math.random();
+    this.velocityY = data.velocityY || Math.random();
 
     this.color = '#fff';
     this.distance = distance(this.x, target.x, this.y, target.y);
-    this.direction = Math.floor(Math.random() * 4);
+    this.direction = data.direction || Math.floor(Math.random() * 4);
 
     this.steps = [];
+    this.genes = data.steps || [];
 
     this.bornAt = Date.now();
 
@@ -44,7 +49,7 @@ class Dot {
   }
 
   die() {
-    if ((this.x < 0 || this.x > width) || (this.y < 0 || this.y > height) || this.steps.length > 19) {
+    if ((this.x < 0 || this.x > width) || (this.y < 0 || this.y > height) || this.steps.length > 20) {
       this.diedAt = Date.now();
       this.lifeTime = this.diedAt - this.bornAt;
       this.destroy();
@@ -54,10 +59,12 @@ class Dot {
   }
 
   tick() {
-    this.accelerationX = Math.random() * (Math.floor(Math.random() * 2) ? -1 : 1);
-    this.accelerationY = Math.random() * (Math.floor(Math.random() * 2) ? -1 : 1);
+    let gene = this.genes.shift() || {};
 
-    this.direction = Math.floor(Math.random() * 4);
+    this.accelerationX = gene.accelerationX || Math.random() * (Math.floor(Math.random() * 2) ? -1 : 1);
+    this.accelerationY = gene.accelerationY || Math.random() * (Math.floor(Math.random() * 2) ? -1 : 1);
+
+    this.direction = gene.direction || Math.floor(Math.random() * 4);
 
     switch (this.direction) {
       case 0: // to top
@@ -79,20 +86,17 @@ class Dot {
 
   stepForward() {
     this.steps.push({
-      x: this.x,
-      y: this.y,
-      velocityX: this.velocityX,
-      velocityY: this.velocityY,
       accelerationX: this.accelerationX,
       accelerationY: this.accelerationY,
       direction: this.direction
-    })
+    });
   }
 
   update() {
     this.x += this.accelerationX;
     this.y += this.accelerationY;
     this.distance = distance(this.x, target.x, this.y, target.y);
+    // this.y -= 0.25;
   }
 
   draw() {
@@ -102,20 +106,30 @@ class Dot {
 }
 
 let dotsFarm = [];
-const generation = () => {
+const generation = (dotsGenes = []) => {
+  generationIndex++;
+  console.log('new generation', dotsGenes)
   for (let x = 0; x < 10; x++) {
-    dotsFarm.push(new Dot(width / 2, height - 20));
+    dotsFarm.push(new Dot(dotsGenes[x]));
   }
 };
 generation();
 
+let dotsGenes = [];
 const update = () => {
-  if (!dotsFarm.length) generation();
+  if (!dotsFarm.length) {
+    generation(dotsGenes);
+    dotsGenes.length = 0;
+  }
 
   dotsFarm.forEach((dot, i) => {
     dot.update();
     if (dot.die()) {
-      dotsFarm.splice(i, 1);
+      let diedDot = dotsFarm.splice(i, 1)[0];
+
+      if (Math.floor(diedDot.distance) < height / 2 || diedDot.steps.length < 10) {
+        dotsGenes.push(diedDot);
+      }
     }
   });
 };
