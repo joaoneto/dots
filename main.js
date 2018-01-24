@@ -102,11 +102,16 @@ class Dot {
 }
 
 let dotsFarm = [];
-for (let x = 0; x < 10; x++) {
-  dotsFarm.push(new Dot(width / 2, height - 20));
-}
+const generation = () => {
+  for (let x = 0; x < 10; x++) {
+    dotsFarm.push(new Dot(width / 2, height - 20));
+  }
+};
+generation();
 
 const update = () => {
+  if (!dotsFarm.length) generation();
+
   dotsFarm.forEach((dot, i) => {
     dot.update();
     if (dot.die()) {
